@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import numpy as np
-import google.generativeai as genai
 
 # --- 1. Konfigurasi Halaman ---
 st.set_page_config(page_title="Dashboard Interaktif",
