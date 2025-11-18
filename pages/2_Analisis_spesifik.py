@@ -66,7 +66,7 @@ if df is not None:
         
         if not yearly_sales.empty:
             highest_year_data = yearly_sales.loc[yearly_sales['total_sales'].idxmax()]
-            st.metric(label="Tahun Penjualan Puncak (Game Fisik)", value=f"{int(highest_year_data['release_year'])}", delta=f"{highest_year_data['total_sales']:.2f} Juta Unit")
+            st.metric(label="Tahun Penjualan Puncak Game Fisik", value=f"{int(highest_year_data['release_year'])}", delta=f"{highest_year_data['total_sales']:.2f} Juta Unit")
         
         fig_q2 = px.line(
             yearly_sales, x='release_year', y='total_sales',
@@ -86,7 +86,11 @@ if df is not None:
         
         all_consoles = df.groupby('console')['total_sales'].sum().sort_values(ascending=False).index.tolist()
         default_top_5 = all_consoles[:5]
-        selected_consoles = st.multiselect("Pilih Konsol untuk Dibandingkan:", options=all_consoles, default=default_top_5)
+        selected_consoles = st.multiselect(
+            "Pilih Konsol untuk Dibandingkan:",
+            options=all_consoles,
+            default=['PS4', 'PS3', 'X360', 'DS', '3DS']
+        )
         
         if selected_consoles:
             df_top_consoles = df[df['console'].isin(selected_consoles)]
@@ -109,7 +113,7 @@ if df is not None:
         else:
             st.warning("Silakan pilih minimal satu konsol.")
 
-    # --- Isi Tab 5: Q4 (Skor Kritikus vs. Penjualan) ---
+    # --- Isi Tab 4: Q4 (Skor Kritikus vs. Penjualan) ---
     with tab4:
         st.header("Q4: Apakah skor kritikus yang tinggi menjamin penjualan?")
         

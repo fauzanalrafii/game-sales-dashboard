@@ -6,10 +6,6 @@ from typing import Optional, List, Literal
 
 # --- 1. DUPLIKASI LOGIKA PEMBERSIHAN DATA ---
 def get_clean_data_for_api(file_path):
-    """
-    Memuat dan membersihkan data CSV vgchartz.
-    Ini adalah fungsi MURNI (pure) tanpa Streamlit.
-    """
     try:
         df = pd.read_csv(file_path)
     except FileNotFoundError:
@@ -17,7 +13,7 @@ def get_clean_data_for_api(file_path):
         return None
     
     df_clean = df.dropna(subset=['total_sales']).copy()
-    df_clean['release_date'] = pd.to_datetime(df_clean['release_date'], errors='coerce')
+    df_clean['release_date'] = pd.to_datetime(df_clean['release_date'])
     df_clean['release_year'] = df_clean['release_date'].dt.year
     df_clean['release_year'] = df_clean['release_year'].fillna(0).astype(int)
     regional_cols = ['na_sales', 'jp_sales', 'pal_sales', 'other_sales']
@@ -30,15 +26,12 @@ def get_clean_data_for_api(file_path):
 
 # --- FUNGSI HELPER: Konversi DataFrame ke JSON dengan aman ---
 def safe_df_to_response(df):
-    """
-    Mengonversi DataFrame ke JSON, menangani NaN/NaT dengan benar.
-    """
     result_json = df.to_json(orient="records")
     return json.loads(result_json)
 
 # --- 2. Inisialisasi Aplikasi FastAPI ---
 app = FastAPI(
-    title="Game Sales API (Simple URL)",
+    title="Game Sales API",
     description="API untuk memfilter dan menganalisis data penjualan game.",
     version="1.0.0"
 )

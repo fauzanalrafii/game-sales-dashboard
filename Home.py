@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Home", page_icon="🏠", layout="centered")
 
-st.title("Selamat Datang di Dashboard Analisis Game 🎮")
+st.title("Selamat Datang di Dashboard Analisis Penjualan Game 🎮")
 
 # st.image("link_ke_gambar_game_keren.jpg") # Opsional, jika punya gambar
 

@@ -33,38 +33,83 @@ df = load_data('vgchartz-2024.csv')
 if df is None:
     st.stop() 
 
+# --- 3. CSS Kustom (TERMASUK STYLE KPI BARU) ---
+st.markdown("""
+    <style>
+    /* 1. Impor font 'Titillium Web' */
+    @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;700&display=swap');
+
+    /* 2. Terapkan font ke seluruh aplikasi */
+    html, body, [class*="st-"], [class*="css-"] {
+        font-family: 'Titillium Web', sans-serif;
+    }
+
+    /* 3. Efek "Glow" untuk KONTENER VISUALISASI */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border: 1px solid #00FFFF;
+        border-radius: 10px;
+        box-shadow: 0 0 15px #00FFFF;
+        transition: box-shadow 0.3s ease-in-out;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"]:hover {
+        box-shadow: 0 0 25px #00FFFF, 0 0 35px #00FFFF;
+    }
+
+    /* 4. Hapus footer "Made with Streamlit" */
+    footer {visibility: hidden;}
+    
+    /* --- 5. STYLE BARU UNTUK KPI (st.metric) --- */
+    
+    /* Target setiap kotak st.metric */
+    [data-testid="stMetric"] {
+        background-color: #1E1E2E;   /* Latar belakang abu-abu gelap */
+        border: 1px solid #00FFFF;   /* Garis batas Neon Cyan */
+        border-radius: 10px;         /* Sudut membulat */
+        padding: 15px 20px;          /* Padding (p-5) */
+        box-shadow: 0 0 10px #00FFFF; /* Efek Glow (shadow) */
+        /* Tambahkan margin agar ada jarak antar KPI */
+        margin-bottom: 10px; 
+    }
+
+    /* Target label (misal: "Total Games") */
+    [data-testid="stMetricLabel"] {
+        font-size: 0.95rem;          /* Ukuran font */
+        color: #a0a0a0;             /* Warna abu-abu */
+        font-weight: 600;
+    }
+
+    /* Target nilai (misal: "2.87 M") */
+    [data-testid="stMetricValue"] {
+        font-size: 2.25rem;          /* Ukuran font */
+        font-weight: 700;            /* font-bold */
+        color: #FFFFFF;              /* Warna putih */
+    }
+    
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# --- 4. Layout: Sidebar (Filter) ---
 st.sidebar.header("Filters Dashboard 📊")
 
 # --- Logika Filter Bertingkat Dimulai ---
-
-# 1. Gambar filter KONSOL terlebih dahulu (Filter Induk)
 all_consoles = df['console'].unique()
 selected_consoles = st.sidebar.multiselect("Pilih Konsol:", options=all_consoles, default=[])
 
-# 2. Tentukan data yang akan digunakan untuk membuat filter Genre
-#    Berdasarkan pilihan di filter Konsol.
 if selected_consoles:
-    # Jika pengguna MEMILIH konsol, filter DataFrame HANYA untuk konsol tsb
     df_for_genre_options = df[df['console'].isin(selected_consoles)]
 else:
-    # Jika pengguna TIDAK memilih konsol, gunakan seluruh DataFrame
     df_for_genre_options = df
 
-# 3. Dapatkan daftar genre yang tersedia DARI data yang sudah difilter tadi
 available_genres = df_for_genre_options['genre'].unique()
-
-# 4. Gambar filter GENRE (Filter Anak)
-#    Gunakan 'available_genres' sebagai options, BUKAN 'all_genres'
 selected_genres = st.sidebar.multiselect(
     "Pilih Genre (berdasarkan konsol):", 
     options=available_genres, 
     default=[]
 )
-
 # --- Logika Filter Bertingkat Selesai ---
 
-
-# 5. Filter Tahun (Independen)
+# Filter Tahun (Independen)
 min_year = int(df.loc[df['release_year'] > 0, 'release_year'].min())
 max_year = int(df['release_year'].max())
 selected_year_range = st.sidebar.slider(
@@ -72,11 +117,7 @@ selected_year_range = st.sidebar.slider(
     min_value=min_year, max_value=max_year, value=(min_year, max_year) 
 )
 
-# ... (setelah st.sidebar.slider untuk tahun) ...
-# --- 4. Layout: Sidebar (Filter) ---
-# ... (filter genre, konsol, tahun) ...
-
-# 6. Filter Skor Kritikus (KUALITAS)
+# Filter Skor Kritikus (KUALITAS)
 selected_score_range = st.sidebar.slider(
     "Filter berdasarkan Skor Kritikus (0-10):",
     min_value=0.0,
@@ -85,7 +126,7 @@ selected_score_range = st.sidebar.slider(
     step=0.5
 )
 
-# --- TAMBAHAN BARU: Checkbox untuk data tanpa skor ---
+# Checkbox untuk data tanpa skor
 include_no_score = st.sidebar.checkbox(
     "Sertakan game tanpa skor (Kosong)", 
     value=True # Defaultnya, kita sertakan
@@ -106,34 +147,19 @@ df_filtered = df_filtered[
     (df_filtered['release_year'] <= selected_year_range[1])
 ]
 
-# Terapkan filter KATEGORI
-if selected_genres:
-    df_filtered = df_filtered[df_filtered['genre'].isin(selected_genres)]
-if selected_consoles:
-    df_filtered = df_filtered[df_filtered['console'].isin(selected_consoles)]
+# --- PERBAIKAN: Menghapus blok filter yang terduplikasi ---
+# (Blok filter Kategori dan Tahun yang duplikat sudah dihapus dari sini)
 
-# Terapkan filter TAHUN
-df_filtered = df_filtered[
-    (df_filtered['release_year'] >= selected_year_range[0]) &
-    (df_filtered['release_year'] <= selected_year_range[1])
-]
-
-# 1. Definisikan "Punya Skor" sebagai game yang skornya masuk dalam rentang slider
+# Terapkan filter SKOR
 condition_score_in_range = (
     df_filtered['critic_score'].between(selected_score_range[0], selected_score_range[1])
 )
-
-# 2. Definisikan "Tidak Punya Skor"
 condition_no_score = (
     df_filtered['critic_score'].isna()
 )
-
-# 3. Terapkan filter berdasarkan pilihan Checkbox
 if include_no_score:
-    # JIKA dicentang: Tampilkan game (Dalam Rentang) ATAU (Tanpa Skor)
     df_filtered = df_filtered[ condition_score_in_range | condition_no_score ]
 else:
-    # JIKA TIDAK dicentang: Tampilkan HANYA game (Dalam Rentang)
     df_filtered = df_filtered[ condition_score_in_range ]
 
 # --- 6. Layout: Halaman Utama ---
@@ -143,36 +169,38 @@ st.markdown("Gunakan filter di sidebar untuk menjelajahi data.")
 if df_filtered.empty:
     st.warning("Tidak ada data yang sesuai dengan filter Anda. Coba ubah filter.")
 else:
-    # --- 7. Metrik Utama ---
-    with st.container(border=True):
-        st.header("Metrik Utama (Berdasarkan Filter)")
-        
-        # --- PERBAIKAN 1: Logika Penjualan ---
-        total_sales_filtered_miliar = df_filtered['total_sales'].sum() / 1000
-        
-        total_games_filtered = df_filtered.shape[0]
-        avg_critic_score = np.nanmean(df_filtered['critic_score'])
+    # --- 7. Metrik Utama (TANPA container pembungkus) ---
+    st.header("Metrik Utama (Berdasarkan Filter)")
+    
+    # CSS akan otomatis menata setiap 'st.metric' di bawah ini
+    
+    total_sales_filtered_miliar = df_filtered['total_sales'].sum() / 1000
+    total_games_filtered = df_filtered.shape[0]
+    avg_critic_score = np.nanmean(df_filtered['critic_score'])
 
-        col1, col2, col3 = st.columns(3)
-        
-        # --- PERBAIKAN 1 (Label): Ubah "Jt" -> "M" ---
-        col1.metric("Total Penjualan (Miliar Unit)", f"{total_sales_filtered_miliar:.2f} M")
-        
-        col2.metric("Total Game Terfilter", f"{total_games_filtered:,}")
-        
-        # --- PERBAIKAN 2: Konteks Skor Kritikus ---
-        col3.metric("Rerata Skor Kritikus", f"{avg_critic_score:.1f} / 10",
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Total Penjualan (Miliar Unit)", f"{total_sales_filtered_miliar:.2f} M")
+    
+    with col2:
+        st.metric("Total Game Terfilter", f"{total_games_filtered:,}")
+    
+    with col3:
+        st.metric("Rerata Skor Kritikus", f"{avg_critic_score:.1f} / 10",
                     help="Skor rata-rata berdasarkan data 'critic_score', dengan rentang 0 (Buruk) hingga 10 (Sempurna).")
 
-        # Ini sudah benar
-        top_game_filtered = df_filtered.nlargest(1, 'total_sales').iloc[0]
-        st.metric(
-            label="Game Terlaris (Sesuai Filter)",
-            value=top_game_filtered['title'],
-            help=f"Konsol: {top_game_filtered['console']} | Penjualan: {top_game_filtered['total_sales']:.2f} Jt"
-        )
-        
-    # --- 8. Visualisasi Data ---
+    top_game_filtered = df_filtered.nlargest(1, 'total_sales').iloc[0]
+    st.metric(
+        label="Game Terlaris (Sesuai Filter)",
+        value=top_game_filtered['title'],
+        help=f"Konsol: {top_game_filtered['console']} | Penjualan: {top_game_filtered['total_sales']:.2f} Jt"
+    )
+    
+    st.markdown("---") # Pemisah
+
+    # --- 8. Visualisasi Data (DENGAN container pembungkus) ---
+    # Container ini akan ditargetkan oleh CSS [data-testid="stVerticalBlockBorderWrapper"]
     with st.container(border=True):
         st.header("Visualisasi Data")
         
@@ -204,7 +232,7 @@ else:
                 title=f'Top {top_n_h1} Game Terlaris (Breakdown per Wilayah)', 
                 labels={'value': 'Total Penjualan (Juta)', 'unique_title': 'Game (Konsol)', 'variable': 'Wilayah'}
             )
-            st.plotly_chart(fig_games, use_container_width=True)
+            st.plotly_chart(fig_games, width='stretch')
             st.success("""
             **Analisis:** Grafik ini menunjukkan game terlaris berdasarkan filter Anda, dipecah per wilayah.
             * **Perhatikan:** Apakah ada game yang sangat dominan di satu wilayah?
@@ -216,7 +244,7 @@ else:
                 df_regional, names='Wilayah', values='Penjualan',
                 title='Proporsi Penjualan per Wilayah (Berdasarkan Filter)', hole=0.2,
             )
-            st.plotly_chart(fig_regional, use_container_width=True)
+            st.plotly_chart(fig_regional, width='stretch')
             st.success("""
             **Analisis:** Diagram ini menunjukkan dari mana uang (penjualan) berasal untuk game-game yang Anda filter.
             * **Coba Filter:** Pilih genre 'Role-Playing' atau konsol 'DS'/'3DS'. Anda akan lihat porsi Jepang (`jp_sales`) membesar.
@@ -229,12 +257,11 @@ else:
             labels={'release_year': 'Tahun Rilis', 'total_sales': 'Total Penjualan (Juta)'},
             markers=True
         )
-        st.plotly_chart(fig_trend, use_container_width=True)
+        st.plotly_chart(fig_trend, width='stretch')
         st.success("""
         **Analisis:** Grafik ini menunjukkan "masa keemasan" dari game/konsol yang Anda filter.
         * **Puncak Industri:** Jika tidak difilter, Anda akan melihat puncak penjualan game fisik di sekitar 2008-2011 (era Wii, PS3, X360).
         """)
-
 
     # Tampilkan data mentah jika dicentang
     if st.checkbox("Tampilkan data mentah (sesuai filter)"):
